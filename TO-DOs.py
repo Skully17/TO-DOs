@@ -4,6 +4,7 @@ from datetime import date
 from tkinter import *
 from tkinter.ttk import *
 from PIL import Image, ImageTk
+import calendar
 
 Database = []  # this will be where all of the employees are stored within the program
 
@@ -77,15 +78,18 @@ class MenuScreen(ScreenBase):
 
 class DatabaseScreen(ScreenBase):
     def __init__(self, master):
+        self.ae = Toplevel(master)
+        self.ae.title('TO-DOs To Do')
         super().__init__(master)
 
     def create_widgets(self):
-        self.name = Entry(self.master, textvariable='username')
-        self.name.grid(column=1, row=5)
+        pass  # TODO: make database screen whitch shows all of the TO-DOs
 
 
 class AddTODOScreen(ScreenBase):
     def __init__(self, master):
+        self.ae = Toplevel(master)
+        self.ae.title('Add TO-DO')
         self.description = StringVar()
         self.start_date = StringVar()
         self.end_date = StringVar()
@@ -95,32 +99,47 @@ class AddTODOScreen(ScreenBase):
         super().__init__(master)
 
     def create_widgets(self):
-        self.ae = Toplevel(self.master)
-        self.ae.title('Add TO-DO')
+        today = date.today()
 
         description_label = Label(self.ae, text='Description: ')
         description = Entry(self.ae, textvariable=self.description)
+
         start_date_label = Label(self.ae, text='Start Date: ')
-        
+        start_day = Spinbox(self.ae, from_=1, to=30, width=2)  # TODO: get how many days are in given month, make it 'to' value
+        start_month = Combobox(self.ae, values=calendar.month_name[1:], width=9)
+        start_month.set(calendar.month_name[today.month])
+        start_year = Spinbox(self.ae, from_=today.year, to=today.year+100, width=4)
+
         due_date_label = Label(self.ae, text='Due Date: ')
-        
+        due_day = Spinbox(self.ae, from_=1, to=30, width=2)  # TODO: get how many days are in given month, make it 'to' value
+        due_month = Combobox(self.ae, values=calendar.month_name[1:], width=9)
+        due_year = Spinbox(self.ae, from_=today.year, to=today.year+100, width=4)
+
         priority_label = Label(self.ae, text='Priority: ')
-        priority = Scale(self.ae, orient=HORIZONTAL, length=100, from_=0, to=10)
+        priority = Scale(self.ae, orient=HORIZONTAL, length=100, from_=0, to=10, variable=self.priority)
         priority.set(5)
+
         status_label = Label(self.ae, text='Status: ')
         states = ['Not Started', 'In Progress', 'Finished']
         status = Combobox(self.ae, values=states, textvariable=self.status)
         status.set(states[0])
+
         reminder_label = Label(self.ae, text='Reminder: ')
         reminder = Checkbutton(self.ae, onvalue=1, offvalue=0, variable=self.reminder)
+
         add = Button(self.ae, text='Add', command=self.add_to_do)
         cancel = Button(self.ae, text='Cancel', command=self.ae.destroy)
 
         description_label.grid(column=0, row=0)
         description.grid(column=1, row=0)
         start_date_label.grid(column=0, row=1)
-        
+        start_day.grid(column=1, row=1)
+        start_month.grid(column=2, row=1)
+        start_year.grid(column=3, row=1)
         due_date_label.grid(column=0, row=2)
+        due_day.grid(column=1, row=2)
+        due_month.grid(column=2, row=2)
+        due_year.grid(column=3, row=2)
         
         priority_label.grid(column=0, row=3)
         priority.grid(column=1, row=3)
@@ -133,9 +152,12 @@ class AddTODOScreen(ScreenBase):
 
     def add_to_do(self):
         desc = self.description.get()
+        start = self.start_date.get()
+        due = self.end_date.get()
+        priority = self.priority.get()
+        status = self.status.get()
         reminder = self.reminder.get()
-        print(desc, self.start_date.get(), self.end_date.get(), self.priority.get(), self.status.get(), reminder)
-
+        print(desc, start, due, priority, status, reminder)
 
 
 class Menu(object):
@@ -432,7 +454,7 @@ class Menu(object):
 # Menu()
 
 root = Tk()
-root.title('TO-DOs to do')
+root.title('TO-DOs')
 #root.geometry('300x200+600+200')
 
 menu = MenuScreen(root)
