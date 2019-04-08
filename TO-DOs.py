@@ -1,4 +1,4 @@
-#Program Created By David Ellis     ID: 3728275    Email: ellisd5@lsbu.ac.uk
+#Program Created By David Ellis   ID: 3728275    Email: ellisd5@lsbu.ac.uk - Elliott Gipson ID: ... Email: gipsone@lsbu.ac.uk
 
 from datetime import date
 from tkinter import *
