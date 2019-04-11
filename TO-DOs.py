@@ -6,26 +6,15 @@ from tkinter.ttk import *
 from PIL import Image, ImageTk
 import calendar
 
-Database = []  # this will be where all of the employees are stored within the program
 
-
-class Database(list):
-    def __init__(self):
-        self.database = []
-
+class __Database(list):
     def __str__(self):
-        for item in self.database:
+        for item in self:
             print(item)
-
-    def append(self, item):
-        self.database.append(item)
-
-    def remove(self, item):
-        self.database.remove(item)
 
 
 class ToDo(object):
-    def __init__(self, Description, Start_Date=date.today(), Due_Date=None, Priority=0, Status='Incomplete', Reminder=False):
+    def __init__(self, Description, Start_Date=date.today(), Due_Date=None, Priority=5, Status='Incomplete', Reminder=False):
         self.description = Description
         self.start = Start_Date
         self.due = Due_Date
@@ -78,18 +67,28 @@ class MenuScreen(ScreenBase):
 
 class DatabaseScreen(ScreenBase):
     def __init__(self, master):
-        self.ae = Toplevel(master)
-        self.ae.title('TO-DOs To Do')
+        self.todos = Toplevel(master)
+        self.todos.title('TO-DOs To Do')
         super().__init__(master)
 
     def create_widgets(self):
-        pass  # TODO: make database screen whitch shows all of the TO-DOs
+        title = Label(self.todos, text='TO-DOs To Do:')
+
+        count = 0
+        for item in Database:
+            count+=1
+            lable = Label(self.todos, text=item)
+            lable.grid(column=0, row=count)
+
+        # exit
+
+        title.grid(column=0, row=0)
 
 
 class AddTODOScreen(ScreenBase):
     def __init__(self, master):
-        self.ae = Toplevel(master)
-        self.ae.title('Add TO-DO')
+        self.add_window = Toplevel(master)
+        self.add_window.title('Add TO-DO')
         self.description = StringVar()
         self.start_date = StringVar()
         self.end_date = StringVar()
@@ -101,34 +100,35 @@ class AddTODOScreen(ScreenBase):
     def create_widgets(self):
         today = date.today()
 
-        description_label = Label(self.ae, text='Description: ')
-        description = Entry(self.ae, textvariable=self.description)
+        description_label = Label(self.add_window, text='Description: ')
+        description = Entry(self.add_window, textvariable=self.description)
 
-        start_date_label = Label(self.ae, text='Start Date: ')
-        start_day = Spinbox(self.ae, from_=1, to=30, width=2)  # TODO: get how many days are in given month, make it 'to' value
-        start_month = Combobox(self.ae, values=calendar.month_name[1:], width=9)
+        start_date_label = Label(self.add_window, text='Start Date: ')
+        start_day = Spinbox(self.add_window, from_=1, to=30, width=2)  # TODO: get how many days are in given month, make it 'to' value
+        start_month = Combobox(self.add_window, values=calendar.month_name[1:], width=9)
         start_month.set(calendar.month_name[today.month])
-        start_year = Spinbox(self.ae, from_=today.year, to=today.year+100, width=4)
+        start_year = Spinbox(self.add_window, from_=today.year, to=today.year+100, width=4)
 
-        due_date_label = Label(self.ae, text='Due Date: ')
-        due_day = Spinbox(self.ae, from_=1, to=30, width=2)  # TODO: get how many days are in given month, make it 'to' value
-        due_month = Combobox(self.ae, values=calendar.month_name[1:], width=9)
-        due_year = Spinbox(self.ae, from_=today.year, to=today.year+100, width=4)
+        due_date_label = Label(self.add_window, text='Due Date: ')
+        due_day = Spinbox(self.add_window, from_=1, to=30, width=2)  # TODO: get how many days are in given month, make it 'to' value
+        due_month = Combobox(self.add_window, values=calendar.month_name[1:], width=9)
+        due_month.set(calendar.month_name[today.month])
+        due_year = Spinbox(self.add_window, from_=today.year, to=today.year+100, width=4)
 
-        priority_label = Label(self.ae, text='Priority: ')
-        priority = Scale(self.ae, orient=HORIZONTAL, length=100, from_=0, to=10, variable=self.priority)
+        priority_label = Label(self.add_window, text='Priority: ')
+        priority = Scale(self.add_window, orient=HORIZONTAL, length=100, from_=0, to=10, variable=self.priority)
         priority.set(5)
 
-        status_label = Label(self.ae, text='Status: ')
+        status_label = Label(self.add_window, text='Status: ')
         states = ['Not Started', 'In Progress', 'Finished']
-        status = Combobox(self.ae, values=states, textvariable=self.status)
+        status = Combobox(self.add_window, values=states, textvariable=self.status)
         status.set(states[0])
 
-        reminder_label = Label(self.ae, text='Reminder: ')
-        reminder = Checkbutton(self.ae, onvalue=1, offvalue=0, variable=self.reminder)
+        reminder_label = Label(self.add_window, text='Reminder: ')
+        reminder = Checkbutton(self.add_window, onvalue=1, offvalue=0, variable=self.reminder)
 
-        add = Button(self.ae, text='Add', command=self.add_to_do)
-        cancel = Button(self.ae, text='Cancel', command=self.ae.destroy)
+        add = Button(self.add_window, text='Add', command=self.add_to_do)
+        cancel = Button(self.add_window, text='Cancel', command=self.add_window.destroy)
 
         description_label.grid(column=0, row=0)
         description.grid(column=1, row=0)
@@ -157,7 +157,8 @@ class AddTODOScreen(ScreenBase):
         priority = self.priority.get()
         status = self.status.get()
         reminder = self.reminder.get()
-        print(desc, start, due, priority, status, reminder)
+        Database.append(ToDo(desc, start, due, priority, status, reminder))
+        self.add_window.destroy()
 
 
 class Menu(object):
@@ -170,7 +171,7 @@ class Menu(object):
             self.write_to_file()
         # keeps asking user for input until valid one is given
         while True:
-            print('\n{:-^40}'.format('Main Menu')) # format used to print spaces wide, using '-'s to fill in the blanks, with 'Main Menue' located in the center
+            print('\n{:-^40}'.format('Main Menu'))  # format used to print spaces wide, using '-'s to fill in the blanks, with 'Main Menue' located in the center
             print("""
 1) Add Employee
 2) Remove Employee
@@ -452,6 +453,8 @@ class Menu(object):
 
 
 # Menu()
+
+Database = __Database()
 
 root = Tk()
 root.title('TO-DOs')
