@@ -13,6 +13,16 @@ class __Database(list):
             print(item)
 
 
+class ScreenBase(Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.grid()
+        self.create_widgets()
+
+    def create_widgets(self):
+        pass
+
+
 class ToDo(object):
     def __init__(self, Description, Start_Date=date.today(), Due_Date=None, Priority=5, Status='Incomplete', Reminder=False):
         self.description = Description
@@ -24,24 +34,22 @@ class ToDo(object):
 
     def __str__(self):  # this is a special method that is called whenever the object is printed
         return_value = ""
-        for item in self.__dir__()[:5]:  # this iterated over the first 5 items from the list of the object's attributes and methods
+        for item in self.__dir__()[:6]:  # this iterated over the first 5 items from the list of the object's attributes and methods
             return_value += '%s: %s  ' % (item, str(self.__getattribute__(item)))  # this adds the current item and it's value to the return string
         return return_value
 
+    def modify(self, master):
+        mod = master.Toplevel()
 
-class ScreenBase(Frame):
-    def __init__(self, master):
-        super().__init__(master)
-        self.grid()
-        self.create_widgets()
-
-    def create_widgets(self):
-        pass
+    def delete(self):
+        Database.remove(self)
+        write_to_file()
 
 
 class MenuScreen(ScreenBase):
     def __init__(self, master):
         super().__init__(master)
+        get_file_contents()
 
     def create_widgets(self):
         image = Image.open('LSBU Logo.png')
@@ -76,13 +84,19 @@ class DatabaseScreen(ScreenBase):
 
         count = 0
         for item in Database:
-            count+=1
+            count += 1
             lable = Label(self.todos, text=item)
-            lable.grid(column=0, row=count)
+            modify = Button(self.todos, text='Modify', command=item.modify)
+            delete = Button(self.todos, text='Delete', command=item.delete)
 
-        # exit
+            lable.grid(column=0, row=count)
+            modify.grid(column=1, row=count)
+            delete.grid(column=2, row=count)
+
+        exit = Button(self.todos, text='Exit', command=self.todos.destroy)
 
         title.grid(column=0, row=0)
+        exit.grid(column=0, row=count+1)
 
 
 class AddTODOScreen(ScreenBase):
@@ -158,6 +172,7 @@ class AddTODOScreen(ScreenBase):
         status = self.status.get()
         reminder = self.reminder.get()
         Database.append(ToDo(desc, start, due, priority, status, reminder))
+        write_to_file()
         self.add_window.destroy()
 
 
@@ -169,144 +184,6 @@ class Menu(object):
             self.get_file_contents()
         except:
             self.write_to_file()
-        # keeps asking user for input until valid one is given
-        while True:
-            print('\n{:-^40}'.format('Main Menu'))  # format used to print spaces wide, using '-'s to fill in the blanks, with 'Main Menue' located in the center
-            print("""
-1) Add Employee
-2) Remove Employee
-3) Modify Employee
-4) Search Database
-5) Display Database
-0) Exit
-""")
-            choice = input('Enter Action To Make: ')
-            if choice == '0':
-                break
-            elif choice == '1':
-                self.add()  # starts process of adding an employee to the database
-                self.write_to_file()
-            elif choice == '2':
-                self.delete()  # starts process of removing an employee from the database
-                self.write_to_file()
-            elif choice == '3':
-                self.modify()  # starts process of modifying an employee from the database
-                self.write_to_file()
-            elif choice == '4':
-                self.employee_search()  # starts process of searching employees in the database
-            elif choice == '5':
-                self.display_list_of_employees(Database)  # prints all employees in the database
-
-    def add(self):
-        print('\n{:-^40}'.format('Add Employee'))  # prints 40 charactors, '-' replacing spaces, with 'Add Employee' in the center
-        print("Enter '0' To Exit\n")
-        while True:
-            _id = self.persist_while_empty('Enter ID Of Employee: ')  # asks for id until user enters something
-            if self.grab_employee(_id):  # this tries to get the employee using the given id. if it succeeds, the id exists, if not, the id is valid
-                print('ID already exists: %s' % _id)
-                continue  # sends back to start of loop to get new input from user
-            break  # ends loop as valid id has been given
-        if _id == '0':
-            return
-        name = self.persist_while_empty('Enter Name Of Employee: ')  # asks for name until user enters data
-        if name == '0':
-            return
-        dep = self.persist_while_empty('Enter Department The Employee Is In: ')  # asks for department until user enters data
-        if dep == '0':
-            return
-        des = self.persist_while_empty('Enter The Designation Of The Employee: ')  # asks designation until user enters data
-        if des == '0':
-            return
-        jd = self.persist_while_empty('Enter The Date The Employee Joined: ')  # asks when the employee joined until the user enters data
-        if jd == '0':
-            return
-        while True:
-            # asks if employee is active until the user enters ether a 'y' or 'n'
-            es = self.persist_while_empty('Activate Employee? (y/n) ')
-            if es.lower() == 'y':
-                es = 'Active'
-                break
-            elif es.lower() == 'n':
-                es = 'Inactive'
-                break
-            elif es == '0':
-                break
-        if es == '0':
-            return
-
-        Database.append(Employee(_id, name, dep, des, jd, es))  # creates a nwe employe with data given and adds them to the list of employees
-
-
-    def delete(self):
-        print('\n{:-^40}'.format('Remove Employee'))  # prints 40 charactors, '-' replacing spaces, with 'Remove Employee' in the center
-        print("Enter '0' To Exit\n")
-        while True:
-            to_remove = self.persist_while_empty('Enter ID of the Employee you want to remove: ')  # keeps asking for an id untill user enters one
-            if to_remove == '0':
-                return
-            employee_being_removed = self.grab_employee(to_remove)  # tries to get employee with matching id
-            # if there is not a match, send to top of loop
-            if not employee_being_removed:
-                print('ID not found in database: {0}'.format(to_remove))
-                continue
-            # if the employee is currently active, send to top of loop
-            if employee_being_removed.employee_status.lower() == 'active':
-                print('Employee Has To Be Inactive Before Being Removed')
-                continue
-            # the employee is removed from the list of employees and is returned
-            return Database.pop(Database.index(employee_being_removed))
-
-    def modify(self):
-        print('\n{:-^40}'.format('Modify Employee'))  # prints 40 charactors, '-' replacing spaces, with 'Modify Employee' in the center
-        print("Enter '0' To Exit")
-        self.display_list_of_employees(Database)
-        while True:
-            _id = self.persist_while_empty('Enter ID Of Employee You Want To Modify: ')  # keeps asking for employee id until user enters data
-            if _id == '0':
-                return
-            # if there are no employees with a matching id, send to top of loop
-            if not self.grab_employee(_id):
-                print('ID not found in database: {0}'.format(_id))
-                continue
-            break
-        print("""
-1) Name
-2) Department
-3) Designation
-4) Employee's Status
-0) Exit
-""")
-        while True:
-            # gets what attribute the user wants to change for the chosen employee
-            attribute = input('what attribute do you want to change for this employee? ')
-            if attribute == '0':
-                return
-            # gets employee using given id and changes it's name attribute to whatever data the user inputs
-            if attribute == '1':
-                self.grab_employee(_id).name = self.persist_while_empty('Enter Replacement Name: ')
-                print('Employee Name Has Been Changed...')
-            # gets employee using given id and changes it's department attribute to whatever data the user inputs
-            if attribute == '2':
-                self.grab_employee(_id).department = self.persist_while_empty('Enter Replacement Department: ')
-                print('Employee Department Has Been Changed...')
-            # gets employee using given id and changes it's designation attribute to whatever data the user inputs
-            if attribute == '3':
-                self.grab_employee(_id).designation = self.persist_while_empty('Enter Replacement Designation: ')
-                print('Employee Designation Has Been Changed...')
-            # gets employee using given id and asks user if they want to make the employee Active/Inactive depending on the state of employee
-            if attribute == '4':
-                if self.grab_employee(_id).employee_status == 'Active':  # if the employee with given id is active...
-                    confirm = input('Employee Is Active. Would You Like To Make Them Inactive? (y/n) ')  # asks user if they want to Deactivate employee
-                    # if the user enter 'y', the employee status is changed to 'Inactive'
-                    if confirm.lower() == 'y':
-                        self.grab_employee(_id).employee_status = 'Inactive'
-                        print('Employee Has Been Activated...')
-                else:
-                    confirm = input('Employee is Inactive. Would You Like To Activate Them? (y/n) ')  # asks user if they want to Activate employee
-                    # if the user enters 'y', the employee status is changed to 'Active'
-                    if confirm.lower() == 'y':
-                        self.grab_employee(_id).employee_status = 'Active'
-                        print('Employee Has Been Deactivated...')
 
     def employee_search(self):
         print('\n{:-^40}'.format('Search Employees'))  # prints 40 charactors, '-' replacing spaces, with 'Search Employees' in the center
@@ -410,46 +287,23 @@ class Menu(object):
                         break
                     print('There are no Employees with this status...')
 
-    def write_to_file(self):
-        # gets all data from database list, puts it all in a string and writes that string to the database file
-        to_write = ""
-        for employee in Database:
-            for item in employee.__dir__()[:6]:  # iterates through the important attributes of employee
-                to_write += "%s," % employee.__getattribute__(item)  # appends the value of the current object attribute to the write string
-            to_write += "\n"  # adds new line at end of every employee
-        # writes
-        with open('database.csv', 'w') as fp:
-            fp.write(to_write)
+def write_to_file():
+    # gets all data from database list, puts it all in a string and writes that string to the database file
+    to_write = ""
+    for todo in Database:
+        for item in todo.__dir__()[:6]:  # iterates through the important attributes of employee
+            to_write += "%s," % todo.__getattribute__(item)  # appends the value of the current object attribute to the write string
+        to_write += "\n"  # adds new line at end of every employee
+    # writes
+    with open('database.csv', 'w') as fp:
+        fp.write(to_write)
 
-    def get_file_contents(self):
-        # reads all data in database file and sores is in a list
-        with open('database.csv', 'r') as fp:
-            for employee in fp:  # employees are seporated by a new line
-                args = employee.split(',')  # attributes are seporated by ','s
-                Database.append(Employee(*args[:6]))  # uses stored data, excluding '\n' to recreate employee objects
-
-    def persist_while_empty(self, sentence):
-        # keeps on asking given question until they enter something
-        while True:
-            data = input(sentence)
-            if not data:
-                print('please enter data...')
-                continue
-            return data
-
-    def grab_employee(self, ID):
-        # iterates through database returning object with matching id
-        for employee in Database:
-            if employee.id == ID:
-                return employee
-        return False
-
-    def display_list_of_employees(self, _list):
-        # iterates through employees in database and prints them
-        print('')
-        for item in _list:
-            print(item)
-        print('')
+def get_file_contents():
+    # reads all data in database file and sores is in a list
+    with open('database.csv', 'r') as fp:
+        for employee in fp:  # employees are seporated by a new line
+            args = employee.split(',')  # attributes are seporated by ','s
+            Database.append(ToDo(*args[:6]))  # uses stored data, excluding '\n' to recreate employee objects
 
 
 # Menu()
