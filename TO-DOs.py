@@ -34,16 +34,23 @@ class ToDo(object):
 
     def __str__(self):  # this is a special method that is called whenever the object is printed
         return_value = ""
-        for item in self.__dir__()[:6]:  # this iterated over the first 5 items from the list of the object's attributes and methods
+        for item in self.attributes():
             return_value += '%s: %s  ' % (item, str(self.__getattribute__(item)))  # this adds the current item and it's value to the return string
         return return_value
-
-    def modify(self, master):
-        mod = master.Toplevel()
 
     def delete(self):
         Database.remove(self)
         write_to_file()
+
+    def attributes(self):
+        # this iterated over the first 6 items from the list of the object's attributes and methods
+        return self.__dir__()[:6]
+
+    def values(self):
+        values = []
+        for item in self.attributes():
+            values.append(self.__getattribute__(item))
+        return values
 
 
 class MenuScreen(ScreenBase):
@@ -84,9 +91,10 @@ class DatabaseScreen(ScreenBase):
 
         count = 0
         for item in Database:
+            self.current_todo = item
             count += 1
             lable = Label(self.todos, text=item)
-            modify = Button(self.todos, text='Modify', command=item.modify)
+            modify = Button(self.todos, text='Modify', command=self.modify)
             delete = Button(self.todos, text='Delete', command=item.delete)
 
             lable.grid(column=0, row=count)
@@ -97,6 +105,9 @@ class DatabaseScreen(ScreenBase):
 
         title.grid(column=0, row=0)
         exit.grid(column=0, row=count+1)
+
+    def modify(self):
+        ModifyScreen(self.todos, self.current_todo.values())
 
 
 class AddTODOScreen(ScreenBase):
@@ -176,6 +187,84 @@ class AddTODOScreen(ScreenBase):
         self.add_window.destroy()
 
 
+class ModifyScreen(ScreenBase):
+    def __init__(self, master, attributes):
+        self.modify_window = Toplevel(master)
+        self.modify_window.title('Modify TO-DO')
+        self.description = attributes[0]
+        self.start_date = attributes[1]
+        self.end_date = attributes[2]
+        self.priority = attributes[3]
+        self.status = attributes[4]
+        self.reminder = attributes[5]
+        super().__init__(master)
+
+    def create_widgets(self):
+        today = date.today()
+
+        description_label = Label(self.modify_window, text='Description: ')
+        description = Entry(self.modify_window, textvariable=self.description)
+        description.insert(0, self.description)
+
+        start_date_label = Label(self.modify_window, text='Start Date: ')
+        start_day = Spinbox(self.modify_window, from_=1, to=30, width=2)  # TODO: get how many days are in given month, make it 'to' value
+        start_month = Combobox(self.modify_window, values=calendar.month_name[1:], width=9)
+        start_month.set(calendar.month_name[today.month])
+        start_year = Spinbox(self.modify_window, from_=today.year, to=today.year+100, width=4)
+
+        due_date_label = Label(self.modify_window, text='Due Date: ')
+        due_day = Spinbox(self.modify_window, from_=1, to=30, width=2)  # TODO: get how many days are in given month, make it 'to' value
+        due_month = Combobox(self.modify_window, values=calendar.month_name[1:], width=9)
+        due_month.set(calendar.month_name[today.month])
+        due_year = Spinbox(self.modify_window, from_=today.year, to=today.year+100, width=4)
+
+        priority_label = Label(self.modify_window, text='Priority: ')
+        priority = Scale(self.modify_window, orient=HORIZONTAL, length=100, from_=0, to=10, variable=self.priority)
+        priority.set(self.priority)
+
+        status_label = Label(self.modify_window, text='Status: ')
+        states = ['Not Started', 'In Progress', 'Finished']
+        status = Combobox(self.modify_window, values=states, textvariable=self.status)
+        status.set(self.status)
+
+        reminder_label = Label(self.modify_window, text='Reminder: ')
+        reminder = Checkbutton(self.modify_window, onvalue=1, offvalue=0, variable=self.reminder)
+
+        add = Button(self.modify_window, text='Add', command=self.add_to_do)
+        cancel = Button(self.modify_window, text='Cancel', command=self.modify_window.destroy)
+
+        description_label.grid(column=0, row=0)
+        description.grid(column=1, row=0)
+        start_date_label.grid(column=0, row=1)
+        start_day.grid(column=1, row=1)
+        start_month.grid(column=2, row=1)
+        start_year.grid(column=3, row=1)
+        due_date_label.grid(column=0, row=2)
+        due_day.grid(column=1, row=2)
+        due_month.grid(column=2, row=2)
+        due_year.grid(column=3, row=2)
+
+        priority_label.grid(column=0, row=3)
+        priority.grid(column=1, row=3)
+        status_label.grid(column=0, row=4)
+        status.grid(column=1, row=4)
+        reminder_label.grid(column=0, row=5)
+        reminder.grid(column=1, row=5)
+        add.grid(column=3, row=6)
+        cancel.grid(column=0, row=6)
+
+    def add_to_do(self):
+        desc = self.description.get()
+        start = self.start_date.get()
+        due = self.end_date.get()
+        priority = self.priority.get()
+        status = self.status.get()
+        reminder = self.reminder.get()
+        Database.append(ToDo(desc, start, due, priority, status, reminder))
+        write_to_file()
+        self.modify_window.destroy()
+
+
 class Menu(object):
 
     def __init__(self):
@@ -190,14 +279,6 @@ class Menu(object):
         print("Enter '0' To Exit")
         while True:
             employees = []  # empty list to store employees found in search
-            print("""
-1) ID
-2) name
-3) Department
-4) Designation
-5) Joining Date
-6) Employee Status
-""")
             to_search = self.persist_while_empty('Enter field you want to search with: ')  # keeps asking for search field until user enters data
             if to_search == '0':
                 return
@@ -291,7 +372,7 @@ def write_to_file():
     # gets all data from database list, puts it all in a string and writes that string to the database file
     to_write = ""
     for todo in Database:
-        for item in todo.__dir__()[:6]:  # iterates through the important attributes of employee
+        for item in todo.attributes():  # iterates through the important attributes of employee
             to_write += "%s," % todo.__getattribute__(item)  # appends the value of the current object attribute to the write string
         to_write += "\n"  # adds new line at end of every employee
     # writes
