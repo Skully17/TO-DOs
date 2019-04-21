@@ -15,6 +15,7 @@ class __Database(list):
 
 class ScreenBase(Frame):
     def __init__(self, master):
+        self.months = {name: num for num, name in enumerate(calendar.month_name) if num}
         super().__init__(master)
         self.grid()
         self.create_widgets()
@@ -38,8 +39,13 @@ class ToDo(object):
             return_value += '%s: %s  ' % (item, str(self.__getattribute__(item)))  # this adds the current item and it's value to the return string
         return return_value
 
-    def modify(self):
-        ModifyScreen()
+    def modify(self, description, start, due, priority, status, reminder):
+        self.description = description
+        self.start = start
+        self.due = due
+        self.priority = priority
+        self.status = status
+        self.reminder = reminder
 
     def delete(self):
         Database.remove(self)
@@ -126,8 +132,12 @@ class AddTODOScreen(ScreenBase):
         self.add_window = Toplevel(master)
         self.add_window.title('Add TO-DO')
         self.description = StringVar()
-        self.start_date = StringVar()
-        self.end_date = StringVar()
+        self.start_day = IntVar()
+        self.start_month = StringVar()
+        self.start_year = IntVar()
+        self.due_day = IntVar()
+        self.due_month = StringVar()
+        self.due_year = IntVar()
         self.priority = StringVar()
         self.status = StringVar()
         self.reminder = IntVar()
@@ -140,16 +150,16 @@ class AddTODOScreen(ScreenBase):
         description = Entry(self.add_window, textvariable=self.description)
 
         start_date_label = Label(self.add_window, text='Start Date: ')
-        start_day = Spinbox(self.add_window, from_=1, to=30, width=2)  # TODO: get how many days are in given month, make it 'to' value
-        start_month = Combobox(self.add_window, values=calendar.month_name[1:], width=9)
+        start_day = Spinbox(self.add_window, from_=1, to=30, width=2, textvariable=self.start_day)  # TODO: get how many days are in given month, make it 'to' value
+        start_month = Combobox(self.add_window, values=calendar.month_name[1:], width=9, textvariable=self.start_month)
         start_month.set(calendar.month_name[today.month])
-        start_year = Spinbox(self.add_window, from_=today.year, to=today.year+100, width=4)
+        start_year = Spinbox(self.add_window, from_=today.year, to=today.year+100, width=4, textvariable=self.start_year)
 
         due_date_label = Label(self.add_window, text='Due Date: ')
-        due_day = Spinbox(self.add_window, from_=1, to=30, width=2)  # TODO: get how many days are in given month, make it 'to' value
-        due_month = Combobox(self.add_window, values=calendar.month_name[1:], width=9)
+        due_day = Spinbox(self.add_window, from_=1, to=30, width=2, textvariable=self.due_day)  # TODO: get how many days are in given month, make it 'to' value
+        due_month = Combobox(self.add_window, values=calendar.month_name[1:], width=9, textvariable=self.due_month)
         due_month.set(calendar.month_name[today.month])
-        due_year = Spinbox(self.add_window, from_=today.year, to=today.year+100, width=4)
+        due_year = Spinbox(self.add_window, from_=today.year, to=today.year+100, width=4, textvariable=self.due_year)
 
         priority_label = Label(self.add_window, text='Priority: ')
         priority = Scale(self.add_window, orient=HORIZONTAL, length=100, from_=0, to=10, variable=self.priority)
@@ -190,8 +200,8 @@ class AddTODOScreen(ScreenBase):
 
     def add_to_do(self):
         desc = self.description.get()
-        start = self.start_date.get()
-        due = self.end_date.get()
+        start = date(self.start_year.get(), self.months[self.start_month.get()], self.start_day.get())
+        due = date(self.due_year.get(), self.months[self.due_month.get()], self.due_day.get())
         priority = self.priority.get()
         status = self.status.get()
         reminder = self.reminder.get()
@@ -205,42 +215,67 @@ class ModifyScreen(ScreenBase):
         self.modify_window = Toplevel(master)
         self.modify_window.title('Modify TO-DO')
         self.todo = todo
+
+        self.description = StringVar()
+        self.start_day = IntVar()
+        self.start_month = StringVar()
+        self.start_year = IntVar()
+        self.due_day = IntVar()
+        self.due_month = StringVar()
+        self.due_year = IntVar()
+        self.priority = StringVar()
+        self.status = StringVar()
+        self.reminder = IntVar()
         super().__init__(master)
+        self.description.set(self.todo.description)
+        self.start_day.set(self.todo.start.day)
+        self.start_month.set(self.find_month_by_num(self.todo.start.month))
+        self.start_year.set(self.todo.start.year)
+        self.due_day.set(self.todo.due.day)
+        self.due_month.set(self.find_month_by_num(self.todo.due.month))
+        self.due_year.set(self.todo.due.year)
+        self.priority.set(self.todo.priority)
+        self.status.set(self.todo.status)
+        self.reminder.set(self.todo.reminder)
 
     def create_widgets(self):
         today = date.today()
 
         description_label = Label(self.modify_window, text='Description: ')
-        description = Entry(self.modify_window, textvariable=self.todo.description)
-        self.set_text(description, self.todo.description)
+        description = Entry(self.modify_window, textvariable=self.description)
+        # self.set_text(description, self.description)
 
         start_date_label = Label(self.modify_window, text='Start Date: ')
-        start_day = Spinbox(self.modify_window, from_=1, to=30, width=2)  # TODO: get how many days are in given month, make it 'to' value
-        start_month = Combobox(self.modify_window, values=calendar.month_name[1:], width=9)
-        start_month.set(calendar.month_name[today.month])
-        start_year = Spinbox(self.modify_window, from_=today.year, to=today.year+100, width=4)
+        start_day = Spinbox(self.modify_window, from_=1, to=30, width=2, textvariable=self.start_day)  # TODO: get how many days are in given month, make it 'to' value
+        # self.set_text(start_day, self.start_day)
+        start_month = Combobox(self.modify_window, values=calendar.month_name[1:], width=9, textvariable=self.start_month)
+        # start_month.set(self.find_month_by_num(int(self.start_month.get())))
+        start_year = Spinbox(self.modify_window, from_=today.year, to=today.year+100, width=4, textvariable=self.start_year)
+        # self.set_text(start_year, self.start_year)
 
         due_date_label = Label(self.modify_window, text='Due Date: ')
-        due_day = Spinbox(self.modify_window, from_=1, to=30, width=2)  # TODO: get how many days are in given month, make it 'to' value
-        due_month = Combobox(self.modify_window, values=calendar.month_name[1:], width=9)
-        due_month.set(calendar.month_name[today.month])
-        due_year = Spinbox(self.modify_window, from_=today.year, to=today.year+100, width=4)
+        due_day = Spinbox(self.modify_window, from_=1, to=30, width=2, textvariable=self.due_day)  # TODO: get how many days are in given month, make it 'to' value
+        # self.set_text(due_day, self.due_day)
+        due_month = Combobox(self.modify_window, values=calendar.month_name[1:], width=9, textvariable=self.due_month)
+        # due_month.set(self.find_month_by_num(int(self.due_month.get())))
+        due_year = Spinbox(self.modify_window, from_=today.year, to=today.year+100, width=4, textvariable=self.due_year)
+        # self.set_text(due_year, self.due_year)
 
         priority_label = Label(self.modify_window, text='Priority: ')
-        priority = Scale(self.modify_window, orient=HORIZONTAL, length=100, from_=0, to=10, variable=self.todo.priority)
+        priority = Scale(self.modify_window, orient=HORIZONTAL, length=100, from_=0, to=10, variable=self.priority)
         # TODO: round number to whole
         # TODO: display current number
-        priority.set(self.todo.priority)
+        # priority.set(self.priority.get())
 
         status_label = Label(self.modify_window, text='Status: ')
         states = ['Not Started', 'In Progress', 'Finished']
-        status = Combobox(self.modify_window, values=states, textvariable=self.todo.status)
-        status.set(self.todo.status)
+        status = Combobox(self.modify_window, values=states, textvariable=self.status)
+        # status.set(self.status.set())
 
         reminder_label = Label(self.modify_window, text='Reminder: ')
-        reminder = Checkbutton(self.modify_window, onvalue=1, offvalue=0, variable=self.todo.reminder)
+        reminder = Checkbutton(self.modify_window, onvalue=1, offvalue=0, variable=self.reminder)
 
-        modify = Button(self.modify_window, text='Modify', command=self.add_to_do)
+        modify = Button(self.modify_window, text='Modify', command=self.modify_to_do)
         cancel = Button(self.modify_window, text='Cancel', command=self.modify_window.destroy)
 
         description_label.grid(column=0, row=0)
@@ -253,7 +288,6 @@ class ModifyScreen(ScreenBase):
         due_day.grid(column=1, row=2)
         due_month.grid(column=2, row=2)
         due_year.grid(column=3, row=2)
-
         priority_label.grid(column=0, row=3)
         priority.grid(column=1, row=3)
         status_label.grid(column=0, row=4)
@@ -263,20 +297,23 @@ class ModifyScreen(ScreenBase):
         modify.grid(column=3, row=6)
         cancel.grid(column=0, row=6)
 
-    def add_to_do(self):
+    def modify_to_do(self):
         desc = self.description.get()
-        start = self.start_date.get()
-        due = self.end_date.get()
+        self.todo.start.replace(int(self.start_year.get()), self.months[self.start_month.get()], int(self.start_day.get()))
+        self.todo.due.replace(int(self.due_year.get()), self.months[self.due_month.get()], int(self.due_day.get()))
         priority = self.priority.get()
         status = self.status.get()
         reminder = self.reminder.get()
-        Database.append(ToDo(desc, start, due, priority, status, reminder))
+        self.todo.modify(desc, self.todo.start, self.todo.due, priority, status, reminder)
         write_to_file()
         self.modify_window.destroy()
 
-    def set_text(self, entry, text):
-        entry.delete(0, END)
-        entry.insert(0, text)
+    def set_text(self, widget, text):
+        widget.delete(0, END)
+        widget.insert(0, text)
+
+    def find_month_by_num(self, month_number):
+        return list(self.months.keys())[list(self.months.values()).index(month_number)]
 
 
 def write_to_file():
@@ -297,6 +334,18 @@ def get_file_contents():
         for employee in fp:  # employees are seporated by a new line
             args = employee.split(',')  # attributes are seporated by ','s
             Database.append(ToDo(*args[:6]))  # uses stored data, excluding '\n' to recreate employee objects
+    objectify_todo_dates()
+
+
+def objectify_todo_dates():
+    try:
+        for todo in Database:
+            start_str = todo.start.split('-')
+            todo.start = date(*[int(x) for x in start_str])
+            due_str = todo.due.split('-')
+            todo.due = date(*[int(x) for x in due_str])
+    except Exception as ex:
+        print(ex.args[0])
 
 
 # Menu()
@@ -308,6 +357,4 @@ root.title('TO-DOs')
 #root.geometry('300x200+600+200')
 
 menu = MenuScreen(root)
-
-current_screen = MenuScreen
 root.mainloop()
