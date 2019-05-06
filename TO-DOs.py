@@ -50,9 +50,6 @@ class ToDo(object):
     def delete(self):
         Database.remove(self)
         write_to_file()
-        root.update_idletasks()
-        root.update()
-        root.pack_slaves()
 
     def attributes(self):
         # this iterated over the first 6 items from the list of the object's attributes and methods
@@ -103,7 +100,7 @@ class DatabaseScreen(ScreenBase):
 
     def create_widgets(self):
 
-        class ModifyLater(DatabaseScreen):
+        class ModifyLater(object):
             def __init__(self, master_screen, todo):
                 self.todo = todo
                 self.master = master_screen
@@ -111,14 +108,20 @@ class DatabaseScreen(ScreenBase):
             def __call__(self):
                 ModifyScreen(self.master, self.todo)
 
-        class DeleteLater(DatabaseScreen):
+        class DeleteLater(object):
             def __init__(self, master_screen, todo):
                 self.todo = todo
                 self.master = master_screen
+                self.widgets = []
 
             def __call__(self):
+                for widget in self.widgets:
+                    widget.grid_remove()
                 self.todo.delete()
-                self.create_widgets()
+
+            def widgets_to_kill(self, widgets):
+                for widget in widgets:
+                    self.widgets.append(widget)
 
         title = Label(self.todos, text='TO-DOs To Do:')
 
@@ -127,7 +130,9 @@ class DatabaseScreen(ScreenBase):
             count += 1
             label = Label(self.todos, text=item)
             modify = Button(self.todos, text='Modify', command=ModifyLater(self.todos, item))
-            delete = Button(self.todos, text='Delete', command=DeleteLater(self.todos, item))
+            delete_later = DeleteLater(self.todos, item)
+            delete = Button(self.todos, text='Delete', command=delete_later)
+            delete_later.widgets_to_kill([label, modify, delete])
 
             label.grid(column=0, row=count)
             modify.grid(column=1, row=count)
