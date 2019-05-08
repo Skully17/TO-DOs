@@ -6,17 +6,18 @@ from tkinter.ttk import *
 from PIL import Image, ImageTk
 import calendar
 
-
+# this is effectively a list that prints the contents one by one
 class __Database(list):
     def __str__(self):
         for item in self:
             print(item)
 
 
+# this is the foundation of all screens
 class ScreenBase(Frame):
     def __init__(self, master):
         self.months = {name: num for num, name in enumerate(calendar.month_name) if num}
-        super().__init__(master)
+        super().__init__(master)  # this initialises the parent class
         self.grid()
         self.create_widgets()
 
@@ -33,7 +34,8 @@ class ToDo(object):
         self.status = Status
         self.reminder = Reminder
 
-    def __str__(self):  # this is a special method that is called whenever the object is printed
+    # this is a special method that is called whenever the object is printed
+    def __str__(self):
         return_value = ""
         for item in self.attributes():
             return_value += '%s: %s  ' % (item, str(self.__getattribute__(item)))  # this adds the current item and it's value to the return string
@@ -76,12 +78,12 @@ class MenuScreen(ScreenBase):
         logo = Label(self, image=photo)
         logo.image = photo
 
-        self.add_employee = Button(self, text='Add TO-DO', command=self.add_to_do)
+        self.add_todo = Button(self, text='Add TO-DO', command=self.add_to_do)
         self.to_dos = Button(self, text='TO-DOs', command=self.to_dos)
         self.exit = Button(self, text='Exit', command=self.master.destroy)
 
         logo.grid(column=0, row=0)
-        self.add_employee.grid(column=0, row=1)
+        self.add_todo.grid(column=0, row=1)
         self.to_dos.grid(column=0, row=2)
         self.exit.grid(column=0, row=3)
 
@@ -105,6 +107,7 @@ class DatabaseScreen(ScreenBase):
                 self.todo = todo
                 self.master = master_screen
 
+            # this special method is called when an instance of this class is called
             def __call__(self):
                 ModifyScreen(self.master, self.todo)
 
@@ -114,6 +117,7 @@ class DatabaseScreen(ScreenBase):
                 self.master = master_screen
                 self.widgets = []
 
+            # this special method is called when an instance of this class is called
             def __call__(self):
                 for widget in self.widgets:
                     widget.grid_remove()
@@ -337,9 +341,9 @@ def write_to_file():
     # gets all data from database list, puts it all in a string and writes that string to the database file
     to_write = ""
     for todo in Database:
-        for item in todo.attributes():  # iterates through the important attributes of employee
+        for item in todo.attributes():  # iterates through the important attributes of todo
             to_write += "%s," % todo.__getattribute__(item)  # appends the value of the current object attribute to the write string
-        to_write += "\n"  # adds new line at end of every employee
+        to_write += "\n"  # adds new line at end of every todo
     # writes
     with open('database.csv', 'w') as fp:
         fp.write(to_write)
@@ -348,9 +352,9 @@ def write_to_file():
 def get_file_contents():
     # reads all data in database file and sores is in a list
     with open('database.csv', 'r') as fp:
-        for employee in fp:  # employees are seporated by a new line
-            args = employee.split(',')  # attributes are seporated by ','s
-            Database.append(ToDo(*args[:6]))  # uses stored data, excluding '\n' to recreate employee objects
+        for todo in fp:  # todos are seporated by a new line
+            args = todo.split(',')  # attributes are seporated by ','s
+            Database.append(ToDo(*args[:6]))  # uses stored data, excluding '\n' to recreate todo objects
     objectify_todo_dates()
 
 
