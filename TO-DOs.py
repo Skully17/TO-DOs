@@ -171,13 +171,13 @@ class AddTODOScreen(ScreenBase):
         description = Entry(self.add_window, textvariable=self.description)
 
         start_date_label = Label(self.add_window, text='Start Date: ')
-        start_day = Spinbox(self.add_window, from_=1, to=30, width=2, textvariable=self.start_day)  # TODO: get how many days are in given month, make it 'to' value
+        start_day = Spinbox(self.add_window, from_=1, to=31, width=2, textvariable=self.start_day)  # TODO: get how many days are in given month, make it 'to' value
         start_month = Combobox(self.add_window, values=calendar.month_name[1:], width=9, textvariable=self.start_month)
         start_month.set(calendar.month_name[today.month])
         start_year = Spinbox(self.add_window, from_=today.year, to=today.year+100, width=4, textvariable=self.start_year)
 
         due_date_label = Label(self.add_window, text='Due Date: ')
-        due_day = Spinbox(self.add_window, from_=1, to=30, width=2, textvariable=self.due_day)  # TODO: get how many days are in given month, make it 'to' value
+        due_day = Spinbox(self.add_window, from_=1, to=31, width=2, textvariable=self.due_day)  # TODO: get how many days are in given month, make it 'to' value
         due_month = Combobox(self.add_window, values=calendar.month_name[1:], width=9, textvariable=self.due_month)
         due_month.set(calendar.month_name[today.month])
         due_year = Spinbox(self.add_window, from_=today.year, to=today.year+100, width=4, textvariable=self.due_year)
@@ -267,7 +267,7 @@ class ModifyScreen(ScreenBase):
         # self.set_text(description, self.description)
 
         start_date_label = Label(self.modify_window, text='Start Date: ')
-        start_day = Spinbox(self.modify_window, from_=1, to=30, width=2, textvariable=self.start_day)  # TODO: get how many days are in given month, make it 'to' value
+        start_day = Spinbox(self.modify_window, from_=1, to=31, width=2, textvariable=self.start_day)  # TODO: get how many days are in given month, make it 'to' value
         # self.set_text(start_day, self.start_day)
         start_month = Combobox(self.modify_window, values=calendar.month_name[1:], width=9, textvariable=self.start_month)
         # start_month.set(self.find_month_by_num(int(self.start_month.get())))
@@ -275,7 +275,7 @@ class ModifyScreen(ScreenBase):
         # self.set_text(start_year, self.start_year)
 
         due_date_label = Label(self.modify_window, text='Due Date: ')
-        due_day = Spinbox(self.modify_window, from_=1, to=30, width=2, textvariable=self.due_day)  # TODO: get how many days are in given month, make it 'to' value
+        due_day = Spinbox(self.modify_window, from_=1, to=31, width=2, textvariable=self.due_day)  # TODO: get how many days are in given month, make it 'to' value
         # self.set_text(due_day, self.due_day)
         due_month = Combobox(self.modify_window, values=calendar.month_name[1:], width=9, textvariable=self.due_month)
         # due_month.set(self.find_month_by_num(int(self.due_month.get())))
