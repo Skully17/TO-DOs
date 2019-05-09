@@ -26,13 +26,13 @@ class ScreenBase(Frame):
 
 
 class ToDo(object):
-    def __init__(self, Description, Start_Date=date.today(), Due_Date=None, Priority=5, Status='Incomplete', Reminder=False):
+    def __init__(self, Description, Start_Date=date.today(), Due_Date=None, Priority=5, Status='Incomplete', Reminder=0):
         self.description = Description
         self.start = Start_Date
         self.due = Due_Date
-        self.priority = Priority
+        self.priority = float(Priority)
         self.status = Status
-        self.reminder = Reminder
+        self.reminder = int(Reminder)
 
     # this is a special method that is called whenever the object is printed
     def __str__(self):
@@ -71,6 +71,9 @@ class MenuScreen(ScreenBase):
             get_file_contents()
         except:
             pass
+        for todo in Database:
+            if int(todo.reminder) and (todo.due - date.today()).total_seconds() <= 172800:
+                ReminderScreen(master, todo)
 
     def create_widgets(self):
         image = Image.open('LSBU Logo.png')
@@ -259,39 +262,32 @@ class ModifyScreen(ScreenBase):
         self.status.set(self.todo.status)
         self.reminder.set(self.todo.reminder)
 
+        self.master = master
+
     def create_widgets(self):
         today = date.today()
 
         description_label = Label(self.modify_window, text='Description: ')
         description = Entry(self.modify_window, textvariable=self.description)
-        # self.set_text(description, self.description)
 
         start_date_label = Label(self.modify_window, text='Start Date: ')
         start_day = Spinbox(self.modify_window, from_=1, to=31, width=2, textvariable=self.start_day)  # TODO: get how many days are in given month, make it 'to' value
-        # self.set_text(start_day, self.start_day)
         start_month = Combobox(self.modify_window, values=calendar.month_name[1:], width=9, textvariable=self.start_month)
-        # start_month.set(self.find_month_by_num(int(self.start_month.get())))
         start_year = Spinbox(self.modify_window, from_=today.year, to=today.year+100, width=4, textvariable=self.start_year)
-        # self.set_text(start_year, self.start_year)
 
         due_date_label = Label(self.modify_window, text='Due Date: ')
         due_day = Spinbox(self.modify_window, from_=1, to=31, width=2, textvariable=self.due_day)  # TODO: get how many days are in given month, make it 'to' value
-        # self.set_text(due_day, self.due_day)
         due_month = Combobox(self.modify_window, values=calendar.month_name[1:], width=9, textvariable=self.due_month)
-        # due_month.set(self.find_month_by_num(int(self.due_month.get())))
         due_year = Spinbox(self.modify_window, from_=today.year, to=today.year+100, width=4, textvariable=self.due_year)
-        # self.set_text(due_year, self.due_year)
 
         priority_label = Label(self.modify_window, text='Priority: ')
         priority = Scale(self.modify_window, orient=HORIZONTAL, length=100, from_=0, to=10, variable=self.priority)
         # TODO: round number to whole
         # TODO: display current number
-        # priority.set(self.priority.get())
 
         status_label = Label(self.modify_window, text='Status: ')
         states = ['Not Started', 'In Progress', 'Finished']
         status = Combobox(self.modify_window, values=states, textvariable=self.status)
-        # status.set(self.status.set())
 
         reminder_label = Label(self.modify_window, text='Reminder: ')
         reminder = Checkbutton(self.modify_window, onvalue=1, offvalue=0, variable=self.reminder)
@@ -317,6 +313,56 @@ class ModifyScreen(ScreenBase):
         reminder.grid(column=1, row=5)
         modify.grid(column=3, row=6)
         cancel.grid(column=0, row=6)
+
+    def modify_to_do(self):
+        desc = self.description.get()
+        self.todo.start.replace(int(self.start_year.get()), self.months[self.start_month.get()], int(self.start_day.get()))
+        self.todo.due.replace(int(self.due_year.get()), self.months[self.due_month.get()], int(self.due_day.get()))
+        priority = self.priority.get()
+        status = self.status.get()
+        reminder = self.reminder.get()
+        self.todo.modify(desc, self.todo.start, self.todo.due, priority, status, reminder)
+        write_to_file()
+        self.modify_window.destroy()
+
+    def set_text(self, widget, text):
+        widget.delete(0, END)
+        widget.insert(0, text)
+
+    def find_month_by_num(self, month_number):
+        return list(self.months.keys())[list(self.months.values()).index(month_number)]
+
+
+class ReminderScreen(ScreenBase):
+    def __init__(self, master, todo):
+        self.reminder_window = Toplevel(master, takefocus=True)
+        self.reminder_window.title('ATTENTION!')
+        self.todo = todo
+        super().__init__(master)
+
+    def create_widgets(self):
+        text = '%s is nearly due:\nDue: %s' % (self.todo.description, self.todo.due)
+        reminder = Label(self.reminder_window, text=text)
+
+        close = Button(self.reminder_window, text='Close', command=self.reminder_window.destroy)
+        disable = Button(self.reminder_window, text='Disable Reminder', command=self.disable_reminder)
+        complete = Button(self.reminder_window, text='Complete', command=self.complete_todo)
+
+        reminder.grid(column=1, row=0)
+        close.grid(column=0, row=1)
+        disable.grid(column=1, row=1)
+        complete.grid(column=2, row=1)
+
+    def disable_reminder(self):
+        self.todo.reminder = 0
+        write_to_file()
+        self.reminder_window.destroy()
+
+    def complete_todo(self):
+        self.todo.status = 'Finished'
+        self.todo.reminder = 0
+        write_to_file()
+        self.reminder_window.destroy()
 
     def modify_to_do(self):
         desc = self.description.get()
