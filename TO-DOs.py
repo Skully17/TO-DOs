@@ -10,12 +10,6 @@ from tkinter.ttk import *
 from PIL import Image, ImageTk
 import calendar
 
-# this is effectively a list that prints the contents one by one
-class __Database(list):
-    def __str__(self):
-        for item in self:
-            print(item)
-
 
 # this is the foundation of all screens
 class ScreenBase(Frame):
@@ -410,7 +404,7 @@ def objectify_todo_dates():
 
 
 if __name__ == '__main__':
-    Database = __Database()
+    Database = []
 
     root = Tk()
     root.title('TO-DOs')
