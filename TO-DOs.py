@@ -1,4 +1,8 @@
-#Program Created By David Ellis   ID: 3728275    Email: ellisd5@lsbu.ac.uk - Elliott Gipson ID: ... Email: gipsone@lsbu.ac.uk
+"""
+Program Created By:
+David Ellis  ID: 3728275  Email: ellisd5@lsbu.ac.uk
+Elliott Gipson  ID: ...  Email: gipsone@lsbu.ac.uk
+"""
 
 from datetime import date
 from tkinter import *
@@ -26,13 +30,13 @@ class ScreenBase(Frame):
 
 
 class ToDo(object):
-    def __init__(self, Description, Start_Date=date.today(), Due_Date=None, Priority=5, Status='Incomplete', Reminder=0):
-        self.description = Description
-        self.start = Start_Date
-        self.due = Due_Date
-        self.priority = float(Priority)
-        self.status = Status
-        self.reminder = int(Reminder)
+    def __init__(self, description, start_date=date.today(), due_date=None, priority=5, status='Incomplete', reminder=0):
+        self.description = description
+        self.start = start_date
+        self.due = due_date
+        self.priority = float(priority)
+        self.status = status
+        self.reminder = int(reminder)
 
     # this is a special method that is called whenever the object is printed
     def __str__(self):
@@ -69,11 +73,9 @@ class MenuScreen(ScreenBase):
         super().__init__(master)
         try:
             get_file_contents()
-        except:
+        except FileNotFoundError:
             pass
-        for todo in Database:
-            if int(todo.reminder) and (todo.due - date.today()).total_seconds() <= 172800:
-                ReminderScreen(master, todo)
+        self.reminders()
 
     def create_widgets(self):
         image = Image.open('LSBU Logo.png')
@@ -81,20 +83,27 @@ class MenuScreen(ScreenBase):
         logo = Label(self, image=photo)
         logo.image = photo
 
-        self.add_todo = Button(self, text='Add TO-DO', command=self.add_to_do)
-        self.to_dos = Button(self, text='TO-DOs', command=self.to_dos)
-        self.exit = Button(self, text='Exit', command=self.master.destroy)
+        add_todo = Button(self, text='Add TO-DO', command=self.add_to_do)
+        to_dos = Button(self, text='TO-DOs', command=self.to_dos)
+        reminder = Button(self, text='Reminders', command=self.reminders)
+        exit = Button(self, text='Exit', command=self.master.destroy)
 
         logo.grid(column=0, row=0)
-        self.add_todo.grid(column=0, row=1)
-        self.to_dos.grid(column=0, row=2)
-        self.exit.grid(column=0, row=3)
+        add_todo.grid(column=0, row=1)
+        to_dos.grid(column=0, row=2)
+        reminder.grid(column=0, row=3)
+        exit.grid(column=0, row=4)
+
+    def add_to_do(self):
+        AddTODOScreen(self.master)
 
     def to_dos(self):
         DatabaseScreen(self.master)
 
-    def add_to_do(self):
-        AddTODOScreen(self.master)
+    def reminders(self):
+        for todo in Database:
+            if int(todo.reminder) and (todo.due - date.today()).total_seconds() <= 172800 and todo.status != 'Finished':
+                ReminderScreen(self.master, todo)
 
 
 class DatabaseScreen(ScreenBase):
@@ -102,16 +111,19 @@ class DatabaseScreen(ScreenBase):
         self.todos = Toplevel(master)
         self.todos.title('TO-DOs To Do')
         super().__init__(master)
+        self.master = master
 
     def create_widgets(self):
 
         class ModifyLater(object):
-            def __init__(self, master_screen, todo):
+            def __init__(self, screen, master_screen, todo):
                 self.todo = todo
                 self.master = master_screen
+                self.screen = screen
 
             # this special method is called when an instance of this class is called
             def __call__(self):
+                self.screen.todos.destroy()
                 ModifyScreen(self.master, self.todo)
 
         class DeleteLater(object):
@@ -136,7 +148,7 @@ class DatabaseScreen(ScreenBase):
         for item in Database:
             count += 1
             label = Label(self.todos, text=item)
-            modify = Button(self.todos, text='Modify', command=ModifyLater(self.todos, item))
+            modify = Button(self.todos, text='Modify', command=ModifyLater(self, self.master, item))
             delete_later = DeleteLater(self.todos, item)
             delete = Button(self.todos, text='Delete', command=delete_later)
             delete_later.widgets_to_kill([label, modify, delete])
@@ -174,21 +186,19 @@ class AddTODOScreen(ScreenBase):
         description = Entry(self.add_window, textvariable=self.description)
 
         start_date_label = Label(self.add_window, text='Start Date: ')
-        start_day = Spinbox(self.add_window, from_=1, to=31, width=2, textvariable=self.start_day)  # TODO: get how many days are in given month, make it 'to' value
+        start_day = Spinbox(self.add_window, from_=1, to=31, width=2, textvariable=self.start_day)
         start_month = Combobox(self.add_window, values=calendar.month_name[1:], width=9, textvariable=self.start_month)
         start_month.set(calendar.month_name[today.month])
         start_year = Spinbox(self.add_window, from_=today.year, to=today.year+100, width=4, textvariable=self.start_year)
 
         due_date_label = Label(self.add_window, text='Due Date: ')
-        due_day = Spinbox(self.add_window, from_=1, to=31, width=2, textvariable=self.due_day)  # TODO: get how many days are in given month, make it 'to' value
+        due_day = Spinbox(self.add_window, from_=1, to=31, width=2, textvariable=self.due_day)
         due_month = Combobox(self.add_window, values=calendar.month_name[1:], width=9, textvariable=self.due_month)
         due_month.set(calendar.month_name[today.month])
         due_year = Spinbox(self.add_window, from_=today.year, to=today.year+100, width=4, textvariable=self.due_year)
 
         priority_label = Label(self.add_window, text='Priority: ')
         priority = Scale(self.add_window, orient=HORIZONTAL, length=100, from_=0, to=10, variable=self.priority)
-        # TODO: round number to whole
-        # TODO: display current number
         priority.set(5)
 
         status_label = Label(self.add_window, text='Status: ')
@@ -271,19 +281,17 @@ class ModifyScreen(ScreenBase):
         description = Entry(self.modify_window, textvariable=self.description)
 
         start_date_label = Label(self.modify_window, text='Start Date: ')
-        start_day = Spinbox(self.modify_window, from_=1, to=31, width=2, textvariable=self.start_day)  # TODO: get how many days are in given month, make it 'to' value
+        start_day = Spinbox(self.modify_window, from_=1, to=31, width=2, textvariable=self.start_day)
         start_month = Combobox(self.modify_window, values=calendar.month_name[1:], width=9, textvariable=self.start_month)
         start_year = Spinbox(self.modify_window, from_=today.year, to=today.year+100, width=4, textvariable=self.start_year)
 
         due_date_label = Label(self.modify_window, text='Due Date: ')
-        due_day = Spinbox(self.modify_window, from_=1, to=31, width=2, textvariable=self.due_day)  # TODO: get how many days are in given month, make it 'to' value
+        due_day = Spinbox(self.modify_window, from_=1, to=31, width=2, textvariable=self.due_day)
         due_month = Combobox(self.modify_window, values=calendar.month_name[1:], width=9, textvariable=self.due_month)
         due_year = Spinbox(self.modify_window, from_=today.year, to=today.year+100, width=4, textvariable=self.due_year)
 
         priority_label = Label(self.modify_window, text='Priority: ')
         priority = Scale(self.modify_window, orient=HORIZONTAL, length=100, from_=0, to=10, variable=self.priority)
-        # TODO: round number to whole
-        # TODO: display current number
 
         status_label = Label(self.modify_window, text='Status: ')
         states = ['Not Started', 'In Progress', 'Finished']
@@ -293,7 +301,7 @@ class ModifyScreen(ScreenBase):
         reminder = Checkbutton(self.modify_window, onvalue=1, offvalue=0, variable=self.reminder)
 
         modify = Button(self.modify_window, text='Modify', command=self.modify_to_do)
-        cancel = Button(self.modify_window, text='Cancel', command=self.modify_window.destroy)
+        cancel = Button(self.modify_window, text='Cancel', command=self.destroy)
 
         description_label.grid(column=0, row=0)
         description.grid(column=1, row=0)
@@ -323,35 +331,39 @@ class ModifyScreen(ScreenBase):
         reminder = self.reminder.get()
         self.todo.modify(desc, self.todo.start, self.todo.due, priority, status, reminder)
         write_to_file()
-        self.modify_window.destroy()
-
-    def set_text(self, widget, text):
-        widget.delete(0, END)
-        widget.insert(0, text)
+        self.destroy()
 
     def find_month_by_num(self, month_number):
         return list(self.months.keys())[list(self.months.values()).index(month_number)]
 
+    def destroy(self):
+        self.modify_window.destroy()
+        DatabaseScreen(self.master)
+
 
 class ReminderScreen(ScreenBase):
     def __init__(self, master, todo):
-        self.reminder_window = Toplevel(master, takefocus=True)
+        self.reminder_window = Toplevel(master)
         self.reminder_window.title('ATTENTION!')
+        self.reminder_window.attributes("-topmost", True)  # keeps window ontop of others
         self.todo = todo
         super().__init__(master)
 
     def create_widgets(self):
-        text = '%s is nearly due:\nDue: %s' % (self.todo.description, self.todo.due)
-        reminder = Label(self.reminder_window, text=text)
+        text = '%s is nearly due:' % self.todo.description
+        reminder = Label(self.reminder_window, text=text, font=('Helvetica', 20, 'bold'))
+        due_text = 'Due Date: %s' % self.todo.due
+        due = Label(self.reminder_window, text=due_text, font=('Helvetica', 20))
 
         close = Button(self.reminder_window, text='Close', command=self.reminder_window.destroy)
         disable = Button(self.reminder_window, text='Disable Reminder', command=self.disable_reminder)
         complete = Button(self.reminder_window, text='Complete', command=self.complete_todo)
 
         reminder.grid(column=1, row=0)
-        close.grid(column=0, row=1)
-        disable.grid(column=1, row=1)
-        complete.grid(column=2, row=1)
+        due.grid(column=1, row=1)
+        close.grid(column=0, row=2)
+        disable.grid(column=1, row=2)
+        complete.grid(column=2, row=2)
 
     def disable_reminder(self):
         self.todo.reminder = 0
@@ -363,24 +375,6 @@ class ReminderScreen(ScreenBase):
         self.todo.reminder = 0
         write_to_file()
         self.reminder_window.destroy()
-
-    def modify_to_do(self):
-        desc = self.description.get()
-        self.todo.start.replace(int(self.start_year.get()), self.months[self.start_month.get()], int(self.start_day.get()))
-        self.todo.due.replace(int(self.due_year.get()), self.months[self.due_month.get()], int(self.due_day.get()))
-        priority = self.priority.get()
-        status = self.status.get()
-        reminder = self.reminder.get()
-        self.todo.modify(desc, self.todo.start, self.todo.due, priority, status, reminder)
-        write_to_file()
-        self.modify_window.destroy()
-
-    def set_text(self, widget, text):
-        widget.delete(0, END)
-        widget.insert(0, text)
-
-    def find_month_by_num(self, month_number):
-        return list(self.months.keys())[list(self.months.values()).index(month_number)]
 
 
 def write_to_file():
@@ -398,8 +392,8 @@ def write_to_file():
 def get_file_contents():
     # reads all data in database file and sores is in a list
     with open('database.csv', 'r') as fp:
-        for todo in fp:  # todos are seporated by a new line
-            args = todo.split(',')  # attributes are seporated by ','s
+        for todo in fp:  # todos are separated by a new line
+            args = todo.split(',')  # attributes are separated by ','s
             Database.append(ToDo(*args[:6]))  # uses stored data, excluding '\n' to recreate todo objects
     objectify_todo_dates()
 
@@ -415,13 +409,11 @@ def objectify_todo_dates():
         print(ex.args[0])
 
 
-# Menu()
+if __name__ == '__main__':
+    Database = __Database()
 
-Database = __Database()
+    root = Tk()
+    root.title('TO-DOs')
 
-root = Tk()
-root.title('TO-DOs')
-#root.geometry('300x200+600+200')
-
-menu = MenuScreen(root)
-root.mainloop()
+    menu = MenuScreen(root)
+    root.mainloop()
